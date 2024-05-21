@@ -14,17 +14,17 @@ type Message struct {
 	Body string `json:"body"`
 }
 
-func handleBroadcast(w *ws.WebsocConn, msg interface{}) {
+func handleBroadcast(w *ws.WebsocConn, msg Message) {
 	err := ws.WebsocJSON.Send(w, msg)
 	if err != nil {
-		fmt.Printf("WS Error: %s\n", err)
+		fmt.Println(err)
 		w.Close()
 	}
 }
 
 func main() {
 
-	websocket := ws.NewWS(Message{}, handleBroadcast)
+	websocket := ws.NewWS(handleBroadcast)
 
 	// mux
 	mux := http.NewServeMux()

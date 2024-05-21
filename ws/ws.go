@@ -13,25 +13,24 @@ type WebsocConn = websocket.Conn
 // alias var websocket.JSON
 var WebsocJSON = websocket.JSON
 
-type Websocket struct {
+// Websocket type
+type Websocket[T any] struct {
 	Conss       map[*websocket.Conn]bool
-	TypeMessage interface{}
-	OnBroadcast func(ws *websocket.Conn, msg interface{})
+	OnBroadcast func(ws *websocket.Conn, msg T)
 }
 
-func NewWS(typeMessage interface{}, onBroadcast func(ws *websocket.Conn, msg interface{})) *Websocket {
-	return &Websocket{
+func NewWS[T any](onBroadcast func(ws *websocket.Conn, msg T)) *Websocket[T] {
+	return &Websocket[T]{
 		Conss:       make(map[*websocket.Conn]bool),
-		TypeMessage: typeMessage,
 		OnBroadcast: onBroadcast,
 	}
 }
 
-func (ws Websocket) HandlerWS() websocket.Handler {
+func (ws Websocket[T]) HandlerWS() websocket.Handler {
 	return websocket.Handler(ws.HandleWS)
 }
 
-func (ws Websocket) HandleWS(websoc *websocket.Conn) {
+func (ws Websocket[T]) HandleWS(websoc *websocket.Conn) {
 	// logging connection
 	fmt.Printf("new connection: %s\n", websoc.RemoteAddr())
 
@@ -48,9 +47,9 @@ func (ws Websocket) HandleWS(websoc *websocket.Conn) {
 	delete(ws.Conss, websoc)
 }
 
-func (ws Websocket) ReadLoop(websoc *websocket.Conn) {
+func (ws Websocket[T]) ReadLoop(websoc *websocket.Conn) {
 	for {
-		message := &ws.TypeMessage
+		var message T
 		err := websocket.JSON.Receive(websoc, &message)
 		if err != nil {
 			if err == io.EOF {
@@ -65,7 +64,7 @@ func (ws Websocket) ReadLoop(websoc *websocket.Conn) {
 	}
 }
 
-func (ws Websocket) Broadcast(msg interface{}) {
+func (ws Websocket[T]) Broadcast(msg T) {
 	for websoc := range ws.Conss {
 		go ws.OnBroadcast(websoc, msg)
 	}
