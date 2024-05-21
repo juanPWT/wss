@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat app</title>
+    <!-- tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .scrollbar-w-2::-webkit-scrollbar {
+        width: 0.25rem;
+        height: 0.25rem;
+      }
+
+      .scrollbar-track-blue-lighter::-webkit-scrollbar-track {
+        --bg-opacity: 1;
+        background-color: #f7fafc;
+        background-color: rgba(247, 250, 252, var(--bg-opacity));
+      }
+
+      .scrollbar-thumb-blue::-webkit-scrollbar-thumb {
+        --bg-opacity: 1;
+        background-color: #edf2f7;
+        background-color: rgba(237, 242, 247, var(--bg-opacity));
+      }
+
+      .scrollbar-thumb-rounded::-webkit-scrollbar-thumb {
+        border-radius: 0.25rem;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 px-5 md:px-10">
+    <div
+      class="flex-1 p:2 sm:p-6 justify-between flex flex-col h-screen w-full"
+      id="chatApp"
+    >
+      <div
+        class="flex sm:items-center justify-between py-3 border-b-2 border-gray-200"
+      >
+        <div class="relative flex items-center space-x-4">
+          <div class="flex flex-col leading-tight">
+            <div class="text-2xl mt-1 flex items-center">
+              <span class="text-gray-700 mr-3">Chat APP</span>
+            </div>
+            <span class="text-lg text-gray-600"
+              >Chat with stranger in here</span
+            >
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg border h-10 w-10 transition duration-500 ease-in-out text-gray-500 hover:bg-gray-300 focus:outline-none"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              class="h-6 w-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              ></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- body  -->
+      <div
+        id="chatRoom"
+        class="flex flex-col space-y-4 p-3 overflow-y-scroll scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch"
+      ></div>
+
+      <!-- input -->
+      <form
+        id="formMessage"
+        class="border-t-2 border-gray-200 px-4 pt-4 mb-2 sm:mb-0"
+      >
+        <div class="relative flex gap-2">
+          <input
+            type="text"
+            placeholder="username"
+            class="w-1/2 focus:outline-none focus:placeholder-gray-400 text-gray-600 placeholder-gray-600 text-sm md:text-base px-2 bg-gray-200 rounded-md py-3"
+            name="username"
+            id="username"
+          />
+          <input
+            type="text"
+            placeholder="Write your message!"
+            class="w-full focus:outline-none focus:placeholder-gray-400 text-gray-600 placeholder-gray-600 text-sm md:text-base px-2 bg-gray-200 rounded-md py-3"
+            name="body"
+            id="body"
+          />
+          <div class="absolute right-0 items-center inset-y-0 flex">
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center rounded-lg px-4 py-3 transition duration-500 ease-in-out text-white bg-blue-500 hover:bg-blue-400 focus:outline-none"
+            >
+              <span class="font-bold hidden md:flex">Send</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                class="h-6 w-6 ml-2 transform rotate-90"
+              >
+                <path
+                  d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <script type="application/javascript">
+      const socket = new WebSocket("ws://localhost:8000/ws");
+
+      socket.onopen = (e) => {
+        console.log("Connected to server");
+      };
+
+      socket.onmessage = (e) => {
+        console.log("Message received: ", e.data);
+        const chatRoom = document.getElementById("chatRoom");
+        const data = JSON.parse(e.data);
+        const username = data.username;
+        const body = data.body;
+
+        chatRoom.innerHTML += `
+        <div class="chat-message" id="bubble-chat">
+          <div class="flex items-end justify-end">
+            <div
+              class="flex flex-col space-y-2 text-xs md:text-base max-w-xs mx-2 order-1 items-end"
+            >
+              <div class="flex flex-col gap-2">
+                <span class="py-2 text-end text-slate-900 text-sm font-semibold"
+                  >${username}</span
+                >
+                <span
+                  class="px-4 py-2 rounded-lg inline-block rounded-br-none bg-blue-600 text-white"
+                >${body}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        `;
+      };
+
+      const formMessage = document.getElementById("formMessage");
+      formMessage.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const username = document.getElementById("username").value;
+        const body = document.getElementById("body").value;
+
+        const data = JSON.stringify({ username, body });
+        socket.send(data);
+        document.getElementById("body").value = "";
+      });
+    </script>
+  </body>
+</html>
